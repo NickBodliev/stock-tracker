@@ -23,6 +23,13 @@
 	<!-- API -->
 
 	<?php
+		function getSpecificStock($stockName){
+			echo $stockName;
+		}
+
+		if (isset($_GET['stock'])) {
+			getSpecificStock($_GET['stock']);
+		}
 		$symbol = "A"; //prendere il valore dalla query string
 		$key = "0244";
 		$ch = curl_init();
@@ -151,7 +158,7 @@
 					<?php 
 						foreach($stocks_list as $stock){?>
 							<li>
-								<a href="#
+								<a href="#index.php?stock=
 									<?php echo "$stock[symbol]" ?>
 								">
 									<?php
