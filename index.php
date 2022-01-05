@@ -20,35 +20,47 @@
 
 	</head>
 
-	<!-- API -->
+	<!-- Get specific stock data -->
 
 	<?php
+		$key = "0244";
 		function getSpecificStock($stockName){
-			echo $stockName;
+		
+			$ch = curl_init();
+			$url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$stockName&interval=5min&apikey=$key";
+			curl_setopt($ch, CURLOPT_URL, $url);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			$result = json_decode(curl_exec($ch), true)["Time Series (Daily)"];
+			curl_close($ch);
+
+			$chart_data = [];
+			$navigator_data = [];
+
+			foreach($result as $date => $value){
+				$chart_data[] = ["x" => $date, "y" => [(double)$value["1. open"], (double)$value["2. high"], (double)$value["3. low"], (double)$value["4. close"]]];
+				$navigator_data[] = ["x" => $date, "y" => (double)$value["4. close"]];
+			}
+
+			$chart_data = json_encode($chart_data);
+			$navigator_data = json_encode($navigator_data);
+			
 		}
+
+	?>
+
+	<!-- Checking whether stock was specified -->
+
+	<?php
 
 		if (isset($_GET['stock'])) {
 			getSpecificStock($_GET['stock']);
 		}
-		$symbol = "A"; //prendere il valore dalla query string
-		$key = "0244";
-		$ch = curl_init();
-		$url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$symbol&interval=5min&apikey=$key";
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		$result = json_decode(curl_exec($ch), true)["Time Series (Daily)"];
-		curl_close($ch);
 
-		$chart_data = [];
-		$navigator_data = [];
+	?>
 
-		foreach($result as $date => $value){
-			$chart_data[] = ["x" => $date, "y" => [(double)$value["1. open"], (double)$value["2. high"], (double)$value["3. low"], (double)$value["4. close"]]];
-			$navigator_data[] = ["x" => $date, "y" => (double)$value["4. close"]];
-		}
-
-		$chart_data = json_encode($chart_data);
-		$navigator_data = json_encode($navigator_data);
+	<!-- Get stocks names -->
+	
+	<?php
 
 		$data = file_get_contents("https://www.alphavantage.co/query?function=LISTING_STATUS&date=2022-01-05&state=active&apikey=$key");
 		$rows = explode("\n", $data);
@@ -61,6 +73,7 @@
 		}
 
 		$stocks_list_json = json_encode($stocks_list);
+
 	?>
 
 	<!-- Chart -->
