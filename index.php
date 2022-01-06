@@ -205,7 +205,7 @@
 			<h2>Choose your stock</h2>
 			<div class="dropdown">
 				<button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">
-					Stock: <span class="caret"></span>
+					<?php if(isset($stockName)){echo $stockName;}else{echo "Stock:";} ?> <span class="caret"></span>
 				</button>
 				<ul class="dropdown-menu">
 					<input class="form-control" id="searchBox" type="text" placeholder="Search..">
