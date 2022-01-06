@@ -25,7 +25,7 @@
 	<?php
 		$key = "0244";
 		function getSpecificStock($stockName){
-		
+			global $key;
 			$ch = curl_init();
 			$url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$stockName&interval=5min&apikey=$key";
 			curl_setopt($ch, CURLOPT_URL, $url);
@@ -40,9 +40,9 @@
 				$chart_data[] = ["x" => $date, "y" => [(double)$value["1. open"], (double)$value["2. high"], (double)$value["3. low"], (double)$value["4. close"]]];
 				$navigator_data[] = ["x" => $date, "y" => (double)$value["4. close"]];
 			}
-
-			$chart_data = json_encode($chart_data);
-			$navigator_data = json_encode($navigator_data);
+			
+			$chart_data_encoded = json_encode($chart_data);
+			$navigator_data_encoded = json_encode($navigator_data);
 			
 		}
 
@@ -51,9 +51,25 @@
 	<!-- Checking whether stock was specified -->
 
 	<?php
+		$stockName = $_GET['stock'];
+		if (isset($stockName)) {			
+			$ch = curl_init();
+			$url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$stockName&interval=5min&apikey=$key";
+			curl_setopt($ch, CURLOPT_URL, $url);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			$result = json_decode(curl_exec($ch), true)["Time Series (Daily)"];
+			curl_close($ch);
 
-		if (isset($_GET['stock'])) {
-			getSpecificStock($_GET['stock']);
+			$chart_data = [];
+			$navigator_data = [];
+
+			foreach($result as $date => $value){
+				$chart_data[] = ["x" => $date, "y" => [(double)$value["1. open"], (double)$value["2. high"], (double)$value["3. low"], (double)$value["4. close"]]];
+				$navigator_data[] = ["x" => $date, "y" => (double)$value["4. close"]];
+			}
+			
+			$chart_data_encoded = json_encode($chart_data);
+			$navigator_data_encoded = json_encode($navigator_data);
 		}
 
 	?>
@@ -79,63 +95,70 @@
 	<!-- Chart -->
 
 	<script>
-		window.onload = function(){
-			stocks_list_json = <?php echo "$stocks_list_json";?>;
-			var chart_data = formatDate(<?php echo "$chart_data";?>);
-			var navigator_data = formatDate(<?php echo "$navigator_data"?>);
+		function createChart(chart_data){
+			console.log(chart_data);
+            if(chart_data != null){
+                var navigator_data = formatDate(<?php echo "$navigator_data_encoded"?>);
 
-			var text = "<?php echo "$symbol Price (in USD)";?>";
+            var text = "<?php echo "$stockName Price (in USD)";?>";
 
-			var stockChart = new CanvasJS.StockChart("stock", {
-				theme: "light2",
+            var stockChart = new CanvasJS.StockChart("stock", {
+                theme: "light2",
 
-				exportEnabled: true,
+                exportEnabled: true,
 
-				title: {
-					text: text
-				},
+                title: {
+                    text: text
+                },
 
-				charts: [{
-					toolTip: {
-						shared: true
-					},
+                charts: [{
+                    toolTip: {
+                        shared: true
+                    },
 
-					axisX: {
-						crosshair: {
-							enabled: true,
-							snapToDataPoint: true
-						}
-					},
+                    axisX: {
+                        crosshair: {
+                            enabled: true,
+                            snapToDataPoint: true
+                        }
+                    },
 
-					axisY: {
-						prefix: "$"
-					},
+                    axisY: {
+                        prefix: "$"
+                    },
 
-					data: [{
-						name: text,
-						type: "candlestick",
-						risingColor: "green",
-						fallingColor: "red",
-						yValueFormatString: "$#,###.##",
-						dataPoints : chart_data
-					}]
-				}],
+                    data: [{
+                        name: text,
+                        type: "candlestick",
+                        risingColor: "green",
+                        fallingColor: "red",
+                        yValueFormatString: "$#,###.##",
+                        dataPoints : chart_data
+                    }]
+                }],
 
-				navigator: {
-					data: [{
-						color: "grey",
-						dataPoints: navigator_data
-					}],
+                navigator: {
+                    data: [{
+                        color: "grey",
+                        dataPoints: navigator_data
+                    }],
 
-					slider: {
-						minimum: new Date(chart_data[chart_data.length-1].x),
-						maximum: new Date(chart_data[0].x)
-					}
-				}
-			});
+                    slider: {
+                        minimum: new Date(chart_data[chart_data.length-1].x),
+                        maximum: new Date(chart_data[0].x)
+                    }
+                }
+            });
 
-			stockChart.render();
-		}
+            stockChart.render();
+        }
+
+	}
+            
+
+	</script>
+
+	<script>
 
 		function formatDate(struct){
 			for(let element of struct){
@@ -143,6 +166,24 @@
 			}
 
 			return struct;
+		}
+		
+		window.onload = function(){
+			console.log('loaded');
+			let stocks_list_json = <?php echo "$stocks_list_json";?>;
+			let chart_data_encoded = <?php 
+										if(isset($chart_data_encoded)){
+											echo "$chart_data_encoded";
+										}else{
+											echo "undefined";
+										};
+									?>;	
+			if(chart_data_encoded){
+				
+				let chart_data = formatDate(chart_data_encoded);
+				createChart(chart_data);
+			}
+			
 		}
 	</script>
 
@@ -171,7 +212,7 @@
 					<?php 
 						foreach($stocks_list as $stock){?>
 							<li>
-								<a href="#index.php?stock=
+								<a href="?stock=
 									<?php echo "$stock[symbol]" ?>
 								">
 									<?php
