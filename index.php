@@ -20,39 +20,14 @@
 
 	</head>
 
-	<!-- Get specific stock data -->
-
-	<?php
-		$key = "0244";
-		function getSpecificStock($stockName){
-			global $key;
-			$ch = curl_init();
-			$url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$stockName&interval=5min&apikey=$key";
-			curl_setopt($ch, CURLOPT_URL, $url);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-			$result = json_decode(curl_exec($ch), true)["Time Series (Daily)"];
-			curl_close($ch);
-
-			$chart_data = [];
-			$navigator_data = [];
-
-			foreach($result as $date => $value){
-				$chart_data[] = ["x" => $date, "y" => [(double)$value["1. open"], (double)$value["2. high"], (double)$value["3. low"], (double)$value["4. close"]]];
-				$navigator_data[] = ["x" => $date, "y" => (double)$value["4. close"]];
-			}
-			
-			$chart_data_encoded = json_encode($chart_data);
-			$navigator_data_encoded = json_encode($navigator_data);
-			
-		}
-
-	?>
-
+	
 	<!-- Checking whether stock was specified -->
 
 	<?php
+		$key = "0244";
 		$stockName = $_GET['stock'];
-		if (isset($stockName)) {			
+		if (isset($stockName)) {
+			#Get specific stock data
 			$ch = curl_init();
 			$url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$stockName&interval=5min&apikey=$key";
 			curl_setopt($ch, CURLOPT_URL, $url);
@@ -96,11 +71,11 @@
 
 	<script>
 		function createChart(chart_data){
-			console.log(chart_data);
-            if(chart_data != null){
-                var navigator_data = formatDate(<?php echo "$navigator_data_encoded"?>);
+			var navigator_data = formatDate(<?php echo "$navigator_data_encoded"?>);
 
             var text = "<?php echo "$stockName Price (in USD)";?>";
+
+			$('<div>', { id: 'stock' }).appendTo('.container');
 
             var stockChart = new CanvasJS.StockChart("stock", {
                 theme: "light2",
@@ -151,11 +126,9 @@
             });
 
             stockChart.render();
-        }
-
-	}
+        
+		}
             
-
 	</script>
 
 	<script>
@@ -169,7 +142,6 @@
 		}
 		
 		window.onload = function(){
-			console.log('loaded');
 			let stocks_list_json = <?php echo "$stocks_list_json";?>;
 			let chart_data_encoded = <?php 
 										if(isset($chart_data_encoded)){
@@ -193,7 +165,7 @@
 			$("#searchBox").on("keyup", function() {
 				var value = $(this).val().toLowerCase();
 				$(".dropdown-menu li").filter(function() {
-				$(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+					$(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
 				});
 			});
 		});
@@ -227,9 +199,6 @@
 			</div>
 		</div>
 
-		<br/>
-
-		<div id="stock"></div>
 	</body>
 
 </html>
